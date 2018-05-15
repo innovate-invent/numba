@@ -9,17 +9,21 @@ import sys
 
 from numba import types
 from . import templates
-from .typeof import typeof_impl
 
+_CData = ctypes._SimpleCData.__bases__[0]
+
+_make_unsigned = lambda x: getattr(types, 'uint{}'.format(ctypes.sizeof(x) * 8))
 
 _FROM_CTYPES = {
     ctypes.c_bool: types.boolean,
-    
+
+    ctypes.c_int: types.int_,
     ctypes.c_int8:  types.int8,
     ctypes.c_int16: types.int16,
     ctypes.c_int32: types.int32,
     ctypes.c_int64: types.int64,
 
+    ctypes.c_uint: types.uint,
     ctypes.c_uint8: types.uint8,
     ctypes.c_uint16: types.uint16,
     ctypes.c_uint32: types.uint32,
@@ -27,6 +31,28 @@ _FROM_CTYPES = {
 
     ctypes.c_float: types.float32,
     ctypes.c_double: types.float64,
+    ctypes.c_longdouble: types.longdouble,
+
+    ctypes.c_ubyte: types.byte,
+    ctypes.c_byte: types.byte,
+
+    ctypes.c_short: types.short,
+    ctypes.c_ushort: types.ushort,
+
+    ctypes.c_long: types.long_,
+    ctypes.c_longlong: types.longlong,
+
+    ctypes.c_ulong: types.ulong,
+    ctypes.c_ulonglong: types.ulonglong,
+
+    ctypes.c_ssize_t: _make_unsigned(ctypes.c_ssize_t),
+    ctypes.c_size_t: _make_unsigned(ctypes.c_size_t),
+    # ctypes.HRESULT: types.void,  # TODO os dependant
+
+    ctypes.c_char: types.char,
+    ctypes.c_char_p: types.CPointer(types.char),
+    ctypes.c_wchar: _make_unsigned(ctypes.c_wchar),  # TODO not ideal representation https://github.com/numpy/numpy/issues/10100
+    ctypes.c_wchar_p: types.CPointer(_make_unsigned(ctypes.c_wchar)),
 
     ctypes.c_void_p: types.voidptr,
     ctypes.py_object: types.ffi_forced_object,

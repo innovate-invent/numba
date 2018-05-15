@@ -106,6 +106,7 @@ long_ = _make_signed(np.long)
 ulong = _make_unsigned(np.long)
 longlong = _make_signed(np.longlong)
 ulonglong = _make_unsigned(np.longlong)
+longdouble = _make_signed(np.longdouble)
 
 # optional types
 optional = Optional
@@ -143,6 +144,7 @@ long_
 ulong
 longlong
 ulonglong
+longdouble
 float_
 double
 void
