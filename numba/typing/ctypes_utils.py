@@ -10,7 +10,7 @@ import sys
 from numba import types
 from . import templates
 
-_CData = ctypes._SimpleCData.__bases__[0]
+_CData = ctypes._SimpleCData.__bases__[0] # This is potentially brittle
 
 _make_unsigned = lambda x: getattr(types, 'uint{}'.format(ctypes.sizeof(x) * 8))
 

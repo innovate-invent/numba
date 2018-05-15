@@ -491,13 +491,14 @@ class StructModel(CompositeModel):
     _value_type = None
     _data_type = None
 
-    def __init__(self, dmm, fe_type, members):
+    def __init__(self, dmm, fe_type, members, packed=False):
         super(StructModel, self).__init__(dmm, fe_type)
         if members:
             self._fields, self._members = zip(*members)
         else:
             self._fields = self._members = ()
         self._models = tuple([self._dmm.lookup(t) for t in self._members])
+        self._packed = packed
 
     def get_member_fe_type(self, name):
         """
@@ -509,13 +510,13 @@ class StructModel(CompositeModel):
     def get_value_type(self):
         if self._value_type is None:
             self._value_type = ir.LiteralStructType([t.get_value_type()
-                                                    for t in self._models])
+                                                    for t in self._models], packed=self._packed)
         return self._value_type
 
     def get_data_type(self):
         if self._data_type is None:
             self._data_type = ir.LiteralStructType([t.get_data_type()
-                                                    for t in self._models])
+                                                    for t in self._models], packed=self._packed)
         return self._data_type
 
     def get_argument_type(self):
