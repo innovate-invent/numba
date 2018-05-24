@@ -12,20 +12,20 @@ from numba.pythonapi import box, unbox, NativeValue
 
 registry = Registry()
 _struct_cache = {}
+_unbox_cache = {}
 
 
 class CDataType(types.Type):
-    def __init__(self):
-        super(CDataType, self).__init__(name='_CData')
+    def __init__(self, pyType, *args, **kwargs):
+        self.pyType = pyType
+        super(CDataType, self).__init__(name=kwargs.get('name') or '_CData')
 
 
 class StructureType(CDataType):
-    def __init__(self, members, packed=True):
+    def __init__(self, pyType, members, packed=True):
         self.members = members
         self.packed = packed
-        super(StructureType, self).__init__(name='Structure')
-
-cdata_type = CDataType()
+        super(StructureType, self).__init__(pyType, name='Structure')
 
 @typeof_impl.register(_CData)
 def typeof_cdata(val, c):
@@ -41,7 +41,7 @@ def typeof_cdata(val, c):
                     raise NotImplementedError("Bitwidth specification not supported")
                 members[i] = (field[0], from_ctypes(field[1]))
 
-            t = StructureType(members, getattr(val, '_pack_', 0) == 1)
+            t = StructureType(c.pyapi.serialize_object(val.__class__), members, getattr(val, '_pack_', 0) == 1)
             _struct_cache[val.__class__] = t
     return t
 
@@ -52,9 +52,25 @@ class StructureModel(StructModel):
 
 @box(CDataType)
 def box_cdata(typ, obj, c):
-    pass
+    res = _unbox_cache.pop(obj, None)
+    if res is None:
+        class_obj = c.pyapi.unserialize(typ.pyType)
+        from_buffer = c.pyapi.object_getattr_string(class_obj, "from_buffer")
+        res = c.pyapi.call(from_buffer, obj)
+        c.pyapi.decref(from_buffer)
+        c.pyapi.decref(class_obj)
+
+    return res
 
 @unbox(CDataType)
 def unbox_cdata(typ, obj, c):
-    cdata = cgutils.create_struct_proxy(typ, 'data')(c.context, c.builder) # ref= )
-    return NativeValue(cdata, cgutils.is_not_null(c.builder, c.pyapi.err_occurred()))
+    c.pyapi.incref(obj)
+    ctypes = c.pyapi.import_module_noblock("ctypes")
+    addressof = c.pyapi.object_getattr_string(ctypes, "addressof")
+    address = c.pyapi.call(addressof, obj)
+    cdata = cgutils.create_struct_proxy(typ, 'data')(c.context, c.builder, ref=address)
+    _unbox_cache[cdata] = obj
+    def cleanup():
+        c.pyapi.decref(obj)
+
+    return NativeValue(cdata, cgutils.is_not_null(c.builder, c.pyapi.err_occurred()), cleanup=cleanup)
