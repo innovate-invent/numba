@@ -9,7 +9,7 @@ import numpy as np
 
 from numba import numpy_support, types, utils, smartarray
 from numba import ir, errors
-
+from numba.support_loader import load_support
 
 class Purpose(enum.Enum):
     # Value being typed is used as an argument
@@ -39,6 +39,11 @@ def typeof_impl(val, c):
     """
     Generic typeof() implementation.
     """
+    load_support(c, val)
+    tp = typeof_impl(val, c)
+    if tp is not None:
+        return tp;
+
     tp = _typeof_buffer(val, c)
     if tp is not None:
         return tp
