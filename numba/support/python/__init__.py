@@ -1,3 +1,0 @@
-
-def init(context):
-    pass
