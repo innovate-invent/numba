@@ -40,9 +40,11 @@ def typeof_impl(val, c):
     Generic typeof() implementation.
     """
     load_support(c, val)
-    tp = typeof_impl(val, c)
-    if tp is not None:
-        return tp;
+    f = typeof_impl.dispatch(val)
+    if f is not typeof_impl:
+        tp = f(val, c)
+        if tp is not None:
+            return tp;
 
     tp = _typeof_buffer(val, c)
     if tp is not None:
